@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using ProAgil.WebAPI.Data;
 using ProAgil.WebAPI.Model;
 
@@ -15,20 +16,18 @@ namespace ProAgil.WebAPI.Controllers
     public class EventoController : ControllerBase
     {
         public readonly DataContext _context;
-        public readonly IEnumerable<Evento> _eventos;
 
         public EventoController(DataContext context)
         {
             _context = context;
-            _eventos = _context.Eventos.ToList();
         }
 
         [HttpGet("eventos")]
-        public IActionResult Get()
+        public async Task<IActionResult> RetornaTodosEventos()
         {
             try
             {
-                var result = _eventos.ToList();
+                var result = await _context.Eventos.ToListAsync();
                 
                 return Ok(result);
             }
@@ -42,10 +41,23 @@ namespace ProAgil.WebAPI.Controllers
         }
 
         [HttpGet("evento/{id}")]
-        public Evento GetEventoById(string id)
+        public async Task<IActionResult> RetornaEventoPorId(string id)
         {
             int.TryParse(id, out int EventoId);
-            return _eventos.FirstOrDefault(x => x.EventoId == EventoId);
+
+            try
+            {
+                var result = await _context.Eventos.FirstOrDefaultAsync(x => x.EventoId == EventoId);;
+                
+                return Ok(result);
+            }
+            catch(System.Exception ex)
+            {
+                return this.StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Erro ao recuperar as informações do banco de dados\n"
+                    + ex.InnerException);
+            }              
         }
     }
 }
